@@ -13,7 +13,24 @@ const App = {
   modalMatchId: null,
   tipModalMatchId: null,
   leaderboardCache: [],
+  lockCheckInterval: null,
 };
+
+// ── Match Lock: prediction disabled once match kicks off ──
+function isMatchLocked(match) {
+  if (!match) return true;
+  if (match.finished || match.is_live) return true;
+  if (match.dateInfo?.timestamp && Date.now() >= match.dateInfo.timestamp) return true;
+  return false;
+}
+
+function getMatchLockStatus(match) {
+  // Returns: 'open' | 'locked' | 'live' | 'finished'
+  if (match.finished) return 'finished';
+  if (match.is_live)  return 'live';
+  if (match.dateInfo?.timestamp && Date.now() >= match.dateInfo.timestamp) return 'locked';
+  return 'open';
+}
 
 // ═══════════════════════════════════════════
 // INIT
@@ -508,10 +525,12 @@ async function renderPredictions() {
 
 function renderPredMatchCard(match, userPreds) {
   const pred = userPreds[match.id] || userPreds[String(match.id)];
-  const isClickable = !match.finished;
+  const lockStatus  = getMatchLockStatus(match);   // 'open'|'locked'|'live'|'finished'
+  const isClickable = lockStatus === 'open';        // only allow betting before kickoff
   const tagClass = { r32:'tag-r32', qf:'tag-qf', sf:'tag-sf', final:'tag-final' }[match.type] || 'tag-r32';
   let cardClass = 'pred-match-card';
   if (isClickable) cardClass += ' clickable';
+  if (lockStatus === 'locked') cardClass += ' match-locked';
 
   let scoreHTML, statusHTML;
   if (match.finished) {
@@ -523,6 +542,9 @@ function renderPredMatchCard(match, userPreds) {
   } else if (match.is_live) {
     scoreHTML = `<div class="pmc-score"><span>${match.home_score ?? 0}</span><span class="pmc-score-sep">:</span><span>${match.away_score ?? 0}</span></div>`;
     statusHTML = `<div class="pmc-status pmc-status--live">🔴 חי ${match.time_elapsed ? match.time_elapsed+"'" : ''}</div>`;
+  } else if (lockStatus === 'locked') {
+    scoreHTML = `<div class="pmc-vs" style="color:var(--red);font-size:13px">🔒</div>`;
+    statusHTML = `<div class="pmc-status" style="color:var(--red);font-size:11px;font-weight:700">נעול — המשחק התחיל</div>`;
   } else {
     scoreHTML = `<div class="pmc-vs">VS</div>`;
     statusHTML = `<div class="pmc-status pmc-status--up">${match.dateInfo?.time || 'בקרוב'}</div>`;
@@ -538,13 +560,15 @@ function renderPredMatchCard(match, userPreds) {
       else { resultBadge = `<span class="pmc-result-badge pmc-result-badge--miss">❌ 0 נק'</span>`; }
     }
     cardClass += ' has-pred';
+    const editBtn = isClickable ? `<span style="font-size:11px;color:var(--orange);margin-right:6px">ערוך</span>` : '';
+    const lockedBadge = lockStatus === 'locked' ? `<span class="pmc-result-badge" style="background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)">🔒 נעול</span>` : '';
     bottomHTML = `<div class="pmc-bottom">
       <div class="pmc-your-pred">
         🗳️ ניחוש: <span class="pmc-pred-score">${pred.home}:${pred.away}</span>
-        ${isClickable ? '<span style="font-size:11px;color:var(--orange);margin-right:6px">ערוך</span>' : ''}
+        ${editBtn}
       </div>
       <div style="display:flex;gap:6px;align-items:center">
-        ${resultBadge}
+        ${resultBadge}${lockedBadge}
         ${isClickable ? `<button class="tip-btn" onclick="event.stopPropagation();openTipModal('${match.id}')">🔮 TIP</button>` : ''}
       </div>
     </div>`;
@@ -552,6 +576,10 @@ function renderPredMatchCard(match, userPreds) {
     bottomHTML = `<div class="pmc-bottom">
       <div class="pmc-cta"><span>✏️</span>לחץ כדי לשים תוצאה</div>
       <button class="tip-btn" onclick="event.stopPropagation();openTipModal('${match.id}')">🔮 TIP</button>
+    </div>`;
+  } else if (lockStatus === 'locked') {
+    bottomHTML = `<div class="pmc-bottom">
+      <div style="font-size:12px;color:var(--red);font-weight:600">🔒 הימורים נסגרו — המשחק התחיל</div>
     </div>`;
   }
 
@@ -759,12 +787,179 @@ function closeTipModal() {
 
 function useTipPrediction(homeScore, awayScore, matchId) {
   closeTipModal();
-  // Open prediction modal with pre-filled values
   openPredictionModal(matchId).then(() => {
     document.getElementById('pred-home-score').value = homeScore;
     document.getElementById('pred-away-score').value = awayScore;
   });
 }
+
+// ═══════════════════════════════════════════
+// PLAYER PROFILE MODAL
+// ═══════════════════════════════════════════
+async function openPlayerProfile(playerName) {
+  const modal   = document.getElementById('profile-modal');
+  const content = document.getElementById('profile-content');
+  modal.classList.remove('hidden');
+
+  // Shimmer while loading
+  content.innerHTML = `
+    <div class="shimmer-card" style="height:130px;margin-bottom:14px"></div>
+    <div class="shimmer-card" style="height:56px;margin-bottom:8px"></div>
+    <div class="shimmer-card" style="height:56px;margin-bottom:8px"></div>
+    <div class="shimmer-card" style="height:56px;margin-bottom:8px"></div>`;
+
+  try {
+    // Get leaderboard entry
+    const entry = App.leaderboardCache.find(e => e.name === playerName) || { points: 0, exact: 0, direction: 0, miss: 0 };
+    const rank  = App.leaderboardCache.findIndex(e => e.name === playerName) + 1;
+
+    // Fetch ALL predictions for this player from Supabase
+    let preds = {};
+    try { preds = await DB.getUserPredictions(playerName); } catch {}
+
+    const totalPlayed = entry.exact + entry.direction + entry.miss;
+    const hitRate     = totalPlayed > 0 ? Math.round((entry.exact + entry.direction) / totalPlayed * 100) : 0;
+    const rankMedal   = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+    const isMe        = playerName === App.currentUser;
+
+    // Build match history rows
+    // Combine: matches the player has predicted + all knockout matches
+    const allMatchIds = new Set([
+      ...Object.keys(preds),
+      ...App.knockoutMatches.map(m => String(m.id))
+    ]);
+
+    const rows = [];
+    for (const matchId of allMatchIds) {
+      const match = App.knockoutMatches.find(m => String(m.id) === String(matchId));
+      if (!match) continue;
+
+      const pred       = preds[matchId] || preds[String(matchId)];
+      const lockStatus = getMatchLockStatus(match);
+      const ts         = match.dateInfo?.timestamp || 0;
+
+      // Decide what to show
+      let predDisplay, resultDisplay, pointsBadge;
+
+      if (match.finished) {
+        // Show actual prediction and actual result + points
+        if (pred) {
+          const r = DB.calculatePoints(pred, { home: match.home_score, away: match.away_score }, match.type);
+          predDisplay   = `${pred.home}:${pred.away}`;
+          resultDisplay = `${match.home_score}:${match.away_score}`;
+          if (r.type === 'exact')     pointsBadge = `<span class="pp-badge pp-exact">🎯 +${r.points}</span>`;
+          else if (r.type === 'direction') pointsBadge = `<span class="pp-badge pp-dir">✅ +${r.points}</span>`;
+          else                         pointsBadge = `<span class="pp-badge pp-miss">❌ 0</span>`;
+        } else {
+          predDisplay   = '—';
+          resultDisplay = `${match.home_score}:${match.away_score}`;
+          pointsBadge   = `<span class="pp-badge pp-miss">לא הימר</span>`;
+        }
+      } else if (lockStatus === 'live') {
+        predDisplay   = pred ? `${pred.home}:${pred.away}` : '—';
+        resultDisplay = `${match.home_score ?? 0}:${match.away_score ?? 0}`;
+        pointsBadge   = `<span class="pp-badge" style="color:var(--red);border-color:rgba(239,68,68,.3)">🔴 חי</span>`;
+      } else if (lockStatus === 'locked') {
+        // Match started but no result yet — show prediction (locked), result pending
+        predDisplay   = pred ? `${pred.home}:${pred.away}` : '—';
+        resultDisplay = '⏳';
+        pointsBadge   = `<span class="pp-badge" style="color:var(--red);border-color:rgba(239,68,68,.25)">🔒</span>`;
+      } else {
+        // Future match — hide prediction (privacy), show ?:?
+        predDisplay   = (isMe && pred) ? `${pred.home}:${pred.away}` : (pred ? '✅' : '—');
+        resultDisplay = '?:?';
+        pointsBadge   = `<span class="pp-badge" style="color:var(--w30);border-color:var(--w6)">ממתין</span>`;
+      }
+
+      rows.push({ match, ts, predDisplay, resultDisplay, pointsBadge });
+    }
+
+    rows.sort((a,b) => (a.ts || 0) - (b.ts || 0));
+
+    content.innerHTML = `
+      <!-- Profile Header -->
+      <div class="pp-header">
+        <div class="pp-ava">${(entry.avatar || playerName.charAt(0)).toUpperCase()}</div>
+        <div class="pp-meta">
+          <div class="pp-name">${esc(playerName)}${isMe ? ' 👤' : ''}</div>
+          <div class="pp-rank">${rankMedal} מקום ${rank}</div>
+        </div>
+        <div class="pp-pts-big">${entry.points}<span style="font-size:13px;color:var(--w60)"> נק'</span></div>
+      </div>
+
+      <!-- Stats Row -->
+      <div class="pp-stats">
+        <div class="pp-stat">
+          <div class="pp-stat-num" style="color:var(--gold)">${entry.exact}</div>
+          <div class="pp-stat-lbl">🎯 מדויק</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-num" style="color:var(--green)">${entry.direction}</div>
+          <div class="pp-stat-lbl">✅ כיוון</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-num" style="color:var(--red)">${entry.miss}</div>
+          <div class="pp-stat-lbl">❌ פספוס</div>
+        </div>
+        <div class="pp-stat">
+          <div class="pp-stat-num" style="color:var(--orange)">${hitRate}%</div>
+          <div class="pp-stat-lbl">פגיעות</div>
+        </div>
+      </div>
+
+      <!-- Win Rate Bar -->
+      <div class="pp-bar-wrap">
+        <div class="pp-bar">
+          <div class="pp-bar-exact" style="width:${totalPlayed > 0 ? Math.round(entry.exact/totalPlayed*100) : 0}%"></div>
+          <div class="pp-bar-dir"   style="width:${totalPlayed > 0 ? Math.round(entry.direction/totalPlayed*100) : 0}%"></div>
+          <div class="pp-bar-miss"  style="width:${totalPlayed > 0 ? Math.round(entry.miss/totalPlayed*100) : 0}%"></div>
+        </div>
+        <div class="pp-bar-legend">
+          <span style="color:var(--gold)">■ מדויק</span>
+          <span style="color:var(--green)">■ כיוון</span>
+          <span style="color:var(--red)">■ פספוס</span>
+        </div>
+      </div>
+
+      <!-- Match History -->
+      <div class="pp-history-title">📋 היסטוריית ניחושים</div>
+      <div class="pp-history">
+        ${rows.length === 0 ? `<div style="text-align:center;padding:24px;color:var(--w30)">אין ניחושים עדיין</div>` :
+          rows.map(r => `
+            <div class="pp-row">
+              <div class="pp-row-teams">
+                <span>${r.match.home_flag || '🏳️'}</span>
+                <span style="font-size:11px;font-weight:700;color:var(--w80)">${esc(r.match.home_team_name || r.match.home_team_label || '?')} נ' ${esc(r.match.away_team_name || r.match.away_team_label || '?')}</span>
+                <span>${r.match.away_flag || '🏳️'}</span>
+              </div>
+              <div class="pp-row-scores">
+                <div class="pp-score-col">
+                  <div style="font-size:9px;color:var(--w30);margin-bottom:2px">ניחוש</div>
+                  <div style="font-size:15px;font-weight:800;color:var(--orange)">${r.predDisplay}</div>
+                </div>
+                <div style="color:var(--w30);font-size:11px">→</div>
+                <div class="pp-score-col">
+                  <div style="font-size:9px;color:var(--w30);margin-bottom:2px">תוצאה</div>
+                  <div style="font-size:15px;font-weight:800;color:var(--white)">${r.resultDisplay}</div>
+                </div>
+                ${r.pointsBadge}
+              </div>
+            </div>`
+          ).join('')}
+      </div>
+
+      <button class="modal-cancel-btn" style="margin-top:10px" onclick="closePlayerProfile()">סגור</button>
+    `;
+  } catch (err) {
+    content.innerHTML = `<div style="text-align:center;padding:30px;color:var(--red)">שגיאה: ${err.message}</div>
+      <button class="modal-cancel-btn" onclick="closePlayerProfile()">סגור</button>`;
+  }
+}
+
+function closePlayerProfile() {
+  document.getElementById('profile-modal').classList.add('hidden');
+}
+
 
 // ═══════════════════════════════════════════
 // LEADERBOARD
@@ -784,6 +979,7 @@ async function renderLeaderboard() {
   container.innerHTML = `
     <div class="lb-realtime-badge"><span class="live-dot-sm"></span> מתעדכן בזמן אמת</div>
     ${renderPodium(board)}
+    <div class="lb-hint">💡 לחץ על שם שחקן לראות פרופיל ונתוני ניחושים</div>
     <div class="lb-table-wrap">
       ${board.map((e, i) => {
         const rank = i + 1;
@@ -793,7 +989,7 @@ async function renderLeaderboard() {
         const isMe     = e.name === App.currentUser;
         const hitRate  = (e.exact + e.direction + e.miss) > 0 ? Math.round((e.exact + e.direction) / (e.exact + e.direction + e.miss) * 100) : 0;
         return `
-          <div class="lb-row ${isMe ? 'lb-row--me' : ''}">
+          <div class="lb-row ${isMe ? 'lb-row--me' : ''}" onclick="openPlayerProfile('${esc(e.name)}')">
             <div class="lb-rank-col ${rankCls}">${rankIcon}</div>
             <div class="lb-ava">${(e.avatar || e.name.charAt(0)).toUpperCase()}</div>
             <div class="lb-info">
@@ -801,7 +997,7 @@ async function renderLeaderboard() {
               <div class="lb-meta">${e.exact}🎯 ${e.direction}✅ • ${hitRate}% פגיעה</div>
             </div>
             <div class="lb-pts-col">${e.points}</div>
-            <div class="lb-trend">${trend}</div>
+            <div style="display:flex;align-items:center;gap:4px">${trend}<span style="font-size:11px;color:var(--w30)">›</span></div>
           </div>`;
       }).join('')}
     </div>`;
