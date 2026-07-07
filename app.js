@@ -671,17 +671,19 @@ function setStageFilter(stage) {
 
 async function renderPredictions() {
   const container = document.getElementById('predictions-content');
-  // Show shimmer
   container.innerHTML = Array(4).fill(`<div class="shimmer-card" style="height:140px;margin-bottom:10px"></div>`).join('');
 
-  const typeMap = { r16: ['r32'], qf: ['qf'], sf: ['sf'], final: ['final'] };
-  const types   = typeMap[App.currentStageFilter] || ['r32'];
+  // Show ALL knockout stages sorted by date — no filter
+  const stageOrder = { r32: 1, qf: 2, sf: 3, final: 4 };
   const matches = App.knockoutMatches
-    .filter(m => types.includes(m.type))
-    .sort((a,b) => (a.dateInfo?.timestamp || 0) - (b.dateInfo?.timestamp || 0));
+    .sort((a,b) => {
+      const so = (stageOrder[a.type]||9) - (stageOrder[b.type]||9);
+      if (so !== 0) return so;
+      return (a.dateInfo?.timestamp || 0) - (b.dateInfo?.timestamp || 0);
+    });
 
   if (!matches.length) {
-    container.innerHTML = `<div class="empty-state"><div class="es-icon">⏳</div><div class="es-title">משחקים יתפרסמו בקרוב</div></div>`;
+    container.innerHTML = `<div class="empty-state"><div class="es-icon">⏳</div><div class="es-title">טוען משחקים...</div></div>`;
     return;
   }
 
@@ -689,7 +691,19 @@ async function renderPredictions() {
   let userPreds = {};
   try { userPreds = await DB.getUserPredictions(App.currentUser); } catch {}
 
-  container.innerHTML = matches.map(m => renderPredMatchCard(m, userPreds)).join('');
+  // Group by stage for visual separators
+  const stageLabels = { r32:'⚔️ שמינית גמר', qf:'🏅 רבע גמר', sf:'🔥 חצי גמר', final:'🏆 גמר' };
+  let lastStage = null;
+  const rows = [];
+  for (const m of matches) {
+    if (m.type !== lastStage) {
+      rows.push(`<div class="stage-separator"><span>${stageLabels[m.type] || m.type}</span></div>`);
+      lastStage = m.type;
+    }
+    rows.push(renderPredMatchCard(m, userPreds));
+  }
+
+  container.innerHTML = rows.join('');
 }
 
 function renderPredMatchCard(match, userPreds) {
@@ -750,7 +764,13 @@ function renderPredMatchCard(match, userPreds) {
     bottomHTML = `<div class="pmc-bottom">
       <div style="font-size:12px;color:var(--red);font-weight:600">🔒 הימורים נסגרו — המשחק התחיל</div>
     </div>`;
+  } else {
+    // future match, no teams yet - still allow TIP
+    bottomHTML = `<div class="pmc-bottom">
+      <div class="pmc-cta" style="color:var(--w30)"><span>⏳</span>קבוצות יקבעו בקרוב</div>
+    </div>`;
   }
+
 
   const homeTeamHTML = match.home_team_name
     ? `<div class="pmc-flag">${match.home_flag}</div><div class="pmc-name">${esc(match.home_team_name)}</div>`
@@ -782,7 +802,14 @@ function renderPredMatchCard(match, userPreds) {
 // ═══════════════════════════════════════════
 async function openPredictionModal(matchId) {
   const match = App.knockoutMatches.find(m => m.id == matchId);
-  if (!match || match.finished) return;
+  if (!match) return;
+
+  // Check lock status
+  const lockStatus = getMatchLockStatus(match);
+  if (lockStatus !== 'open') {
+    showToast('🔒 הימורים נסגרו למשחק זה', 'error');
+    return;
+  }
   App.modalMatchId = matchId;
 
   document.getElementById('modal-stage-label').textContent = match.stageLabel;

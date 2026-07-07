@@ -241,9 +241,16 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 /* ══════════════════════════════════════════
    PREDICTIONS PAGE
 ══════════════════════════════════════════ */
-.stage-filter-bar{display:flex;gap:8px;overflow-x:auto;padding:0 0 12px;scrollbar-width:none;-ms-overflow-style:none;-webkit-overflow-scrolling:touch}
-.sf-btn{flex-shrink:0;background:var(--black-3);border:1px solid var(--w12);border-radius:var(--r-full);color:var(--w60);font-size:13px;font-weight:700;padding:9px 18px;transition:all .2s;white-space:nowrap}
-.sf-btn.active{background:linear-gradient(135deg,var(--orange-d),var(--orange));border-color:transparent;color:white;box-shadow:0 4px 14px var(--o30)}
+/* Predictions header */
+.predictions-header{padding:4px 0 16px}
+.predictions-title{font-size:18px;font-weight:900;color:var(--white);margin-bottom:4px}
+.predictions-sub{font-size:12px;color:var(--w30)}
+
+/* Stage separator */
+.stage-separator{display:flex;align-items:center;gap:10px;margin:20px 0 12px;color:var(--orange);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.5px}
+.stage-separator::before,.stage-separator::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--o20),transparent)}
+.stage-separator::before{background:linear-gradient(90deg,transparent,var(--o20))}
+
 
 /* Match card */
 .pred-match-card{background:var(--black-2);border:1px solid var(--w6);border-radius:var(--r);padding:16px;margin-bottom:10px;transition:border-color .2s,transform .15s;position:relative;overflow:hidden}

@@ -224,7 +224,11 @@ async function getMatchOverrides() {
     const map = {};
     for (const r of (rows || [])) map[r.match_id] = { home: r.home_score, away: r.away_score };
     return map;
-  } catch { return {}; }
+  } catch (e) {
+    // Table might not exist yet - return empty silently
+    console.warn('match_overrides table not ready:', e.message);
+    return {};
+  }
 }
 
 // ═══════════════════════════════════════════
