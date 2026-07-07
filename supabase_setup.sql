@@ -31,6 +31,9 @@ CREATE TABLE IF NOT EXISTS public.predictions (
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Allow all users" ON public.users;
+DROP POLICY IF EXISTS "Allow all predictions" ON public.predictions;
+
 CREATE POLICY "Allow all users" ON public.users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all predictions" ON public.predictions FOR ALL USING (true) WITH CHECK (true);
 
