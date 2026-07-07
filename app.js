@@ -773,6 +773,12 @@ function renderTipResult(tip, match, container) {
         ${(tip.reasoning || []).filter(Boolean).map(r => `<div class="tip-reason-item">• ${esc(r)}</div>`).join('')}
       </div>
 
+      ${(tip.danger_player_home || tip.danger_player_away) ? `
+      <div class="tip-danger-row">
+        ${tip.danger_player_home ? `<div class="tip-danger-card"><span>⚡</span><span class="tdp-flag">${tip.homeFlag}</span><span>${esc(tip.danger_player_home)}</span></div>` : ''}
+        ${tip.danger_player_away ? `<div class="tip-danger-card"><span>⚡</span><span class="tdp-flag">${tip.awayFlag}</span><span>${esc(tip.danger_player_away)}</span></div>` : ''}
+      </div>` : ''}
+
       <button class="modal-submit-btn" onclick="useTipPrediction(${tip.home_score}, ${tip.away_score}, '${match.id}')">
         ✅ השתמש בניחוש הזה
       </button>

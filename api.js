@@ -7,29 +7,41 @@
 const API = (() => {
   const BASE_URL = 'https://worldcup26.ir';
   const CACHE_KEY = 'ozbet_api_cache';
-  const CACHE_TTL = 60000; // 60 seconds cache
+  const CACHE_TTL = 30000; // 30 seconds - fast refresh for live matches
 
-  // Country flag emoji mapping
+  // Complete flag emoji mapping for all WC 2026 teams
   const FLAGS = {
-    'Mexico': '🇲🇽', 'South Africa': '🇿🇦', 'South Korea': '🇰🇷', 'Czech Republic': '🇨🇿',
-    'Canada': '🇨🇦', 'Bosnia and Herzegovina': '🇧🇦', 'United States': '🇺🇸', 'USA': '🇺🇸',
-    'Paraguay': '🇵🇾', 'Haiti': '🇭🇹', 'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿', 'Australia': '🇦🇺',
-    'Turkey': '🇹🇷', 'Brazil': '🇧🇷', 'Morocco': '🇲🇦', 'Qatar': '🇶🇦',
-    'Switzerland': '🇨🇭', 'Ivory Coast': '🇨🇮', 'Ecuador': '🇪🇨', 'Germany': '🇩🇪',
-    'Curaçao': '🇨🇼', 'Netherlands': '🇳🇱', 'Japan': '🇯🇵', 'Sweden': '🇸🇪',
-    'Tunisia': '🇹🇳', 'Iran': '🇮🇷', 'New Zealand': '🇳🇿', 'Belgium': '🇧🇪',
-    'Egypt': '🇪🇬', 'Spain': '🇪🇸', 'Cape Verde': '🇨🇻', 'Saudi Arabia': '🇸🇦',
-    'Uruguay': '🇺🇾', 'France': '🇫🇷', 'Senegal': '🇸🇳', 'Iraq': '🇮🇶',
-    'Norway': '🇳🇴', 'Argentina': '🇦🇷', 'Algeria': '🇩🇿', 'Austria': '🇦🇹',
-    'Portugal': '🇵🇹', 'Democratic Republic of the Congo': '🇨🇩', 'Colombia': '🇨🇴',
-    'Uzbekistan': '🇺🇿', 'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Croatia': '🇭🇷', 'Ghana': '🇬🇭',
-    'Panama': '🇵🇦', 'Jordan': '🇯🇴',
+    // Group A
+    'Mexico': '🇲🇽', 'South Korea': '🇰🇷', 'Czech Republic': '🇨🇿', 'South Africa': '🇿🇦',
+    // Group B
+    'Canada': '🇨🇦', 'Switzerland': '🇨🇭', 'Bosnia and Herzegovina': '🇧🇦', 'Qatar': '🇶🇦',
+    // Group C
+    'Brazil': '🇧🇷', 'Morocco': '🇲🇦', 'Haiti': '🇭🇹', 'Scotland': '🏴󠁧󠁢󠁳󠁣󠁴󠁿',
+    // Group D
+    'United States': '🇺🇸', 'USA': '🇺🇸', 'Paraguay': '🇵🇾', 'Australia': '🇦🇺', 'Turkey': '🇹🇷',
+    // Group E
+    'Germany': '🇩🇪', 'Ivory Coast': '🇨🇮', 'Ecuador': '🇪🇨', 'Curaçao': '🇨🇼',
+    // Group F
+    'Netherlands': '🇳🇱', 'Japan': '🇯🇵', 'Sweden': '🇸🇪', 'Tunisia': '🇹🇳',
+    // Group G
+    'Belgium': '🇧🇪', 'Egypt': '🇪🇬', 'Iran': '🇮🇷', 'New Zealand': '🇳🇿',
+    // Group H
+    'Spain': '🇪🇸', 'Uruguay': '🇺🇾', 'Saudi Arabia': '🇸🇦', 'Cape Verde': '🇨🇻',
+    // Group I
+    'France': '🇫🇷', 'Norway': '🇳🇴', 'Senegal': '🇸🇳', 'Iraq': '🇮🇶',
+    // Group J
+    'Argentina': '🇦🇷', 'Algeria': '🇩🇿', 'Austria': '🇦🇹', 'Jordan': '🇯🇴',
+    // Group K
+    'Portugal': '🇵🇹', 'Colombia': '🇨🇴', 'Democratic Republic of the Congo': '🇨🇩', 'Uzbekistan': '🇺🇿',
+    // Group L
+    'England': '🏴󠁧󠁢󠁥󠁮󠁧󠁿', 'Croatia': '🇭🇷', 'Ghana': '🇬🇭', 'Panama': '🇵🇦',
   };
 
   function getFlag(teamName) {
     if (!teamName) return '🏳️';
     return FLAGS[teamName] || '🏳️';
   }
+
 
   // Stage display labels
   const STAGE_LABELS = {
