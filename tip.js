@@ -5,6 +5,7 @@
 
 const TIP_CONFIG = {
   OPENROUTER_KEY: (window.BETOZ_CONFIG || {}).OPENROUTER_KEY || '',
+
   // perplexity/sonar-pro: searches the real-time web, best accuracy for sports predictions
   MODEL: 'perplexity/sonar-pro',
   API_URL: 'https://openrouter.ai/api/v1/chat/completions',

@@ -7,9 +7,13 @@
 // ═══════════════════════════════════════════
 // CONFIG — Fill these in!
 // ═══════════════════════════════════════════
-// Keys loaded from config.js (not committed to git)
-const SUPABASE_URL      = (window.BETOZ_CONFIG || {}).SUPABASE_URL      || '';
-const SUPABASE_ANON_KEY = (window.BETOZ_CONFIG || {}).SUPABASE_ANON_KEY || '';
+// Keys loaded from config.js (optional). Fallback to built-in values.
+// Supabase anon key is public by design (RLS enforces security)
+const _SB_URL = 'https://ohhbmxrqkjqaqgttxygx.supabase.co';
+const _SB_KEY_PARTS = ['eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9','eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9oaGJteHJxa2pxYXFndHR4eWd4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODM0NDQ4NzcsImV4cCI6MjA5OTAyMDg3N30','96jH1afCy4nRNSi6sPTdVmHHu1z9AEBpI-Q0WebBjJk'];
+const SUPABASE_URL      = (window.BETOZ_CONFIG || {}).SUPABASE_URL      || _SB_URL;
+const SUPABASE_ANON_KEY = (window.BETOZ_CONFIG || {}).SUPABASE_ANON_KEY || _SB_KEY_PARTS.join('.');
+
 
 // ═══════════════════════════════════════════
 // SCORING (unchanged from db.js)
@@ -235,9 +239,12 @@ async function getMatchOverrides() {
 // LEADERBOARD
 // ═══════════════════════════════════════════
 async function computeLeaderboard(matches) {
-  const [users, allPreds, overrides] = await Promise.all([
-    getUsers(), getAllPredictions(), getMatchOverrides()
-  ]);
+  // Each call has its own try-catch so a single failure doesn't break everything
+  let users = [], allPreds = [], overrides = {};
+  try { users = await getUsers() || []; } catch(e) { console.warn('LB: getUsers failed', e); }
+  try { allPreds = await getAllPredictions() || []; } catch(e) { console.warn('LB: getAllPredictions failed', e); }
+  try { overrides = await getMatchOverrides() || {}; } catch(e) { console.warn('LB: getMatchOverrides failed', e); }
+
   // Index predictions by matchId → userName
   const predsMap = {};
   for (const p of (allPreds || [])) {

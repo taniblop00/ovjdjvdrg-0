@@ -391,17 +391,23 @@ async function refreshData(force = false) {
     App.allMatches = matches;
     App.knockoutMatches = API.getKnockoutMatches(matches);
     updateTicker(matches);
-
-    // Pre-compute leaderboard
-    App.leaderboardCache = await DB.computeLeaderboard(App.allMatches);
-
-    renderCurrentSection();
-    const tu = document.getElementById('live-update-time');
-    if (tu) tu.textContent = `עודכן: ${new Date().toLocaleTimeString('he-IL')}`;
   } catch (err) {
-    console.error('refreshData:', err);
-    showToast('שגיאה בטעינת נתונים', 'error', 2000);
+    console.error('refreshData API:', err);
+    // Don't crash — just use whatever we have
   }
+
+  // Compute leaderboard separately — don't let it break the UI
+  try {
+    App.leaderboardCache = await DB.computeLeaderboard(App.allMatches || []);
+  } catch (err) {
+    console.warn('Leaderboard computation failed:', err);
+    // Keep existing cache if any
+    if (!App.leaderboardCache) App.leaderboardCache = [];
+  }
+
+  renderCurrentSection();
+  const tu = document.getElementById('live-update-time');
+  if (tu) tu.textContent = `\u05e2\u05d5\u05d3\u05db\u05df: ${new Date().toLocaleTimeString('he-IL')}`;
 }
 
 function updateTicker(matches) {

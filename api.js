@@ -131,10 +131,13 @@ const API = (() => {
       const isFinished = game.finished === 'TRUE' || game.finished === true;
       const timeElapsedRaw = game.time_elapsed || '';
       const timeElapsed = timeElapsedRaw.toLowerCase().trim();
-      // Live ONLY if time_elapsed is a real minute value like "45", "90+2"
-      // All these strings mean NOT live:
-      const NON_LIVE = ['', 'finished', 'upcoming', 'null', 'none', 'notstarted', 'not started', 'prematch', 'ns', 'tbd', 'postponed', 'cancelled'];
-      const isLive = !isFinished && !NON_LIVE.includes(timeElapsed);
+      // WHITELIST: match is live ONLY if time_elapsed contains a digit
+      // (e.g. "45", "90+2", "45'") OR is "ht" (halftime).
+      // Everything else ("notstarted","live","upcoming","","null") = NOT live.
+      const isLive = !isFinished && (
+        /\d/.test(timeElapsed) || timeElapsed === 'ht'
+      );
+
       const dateInfo = formatMatchDate(game.local_date);
 
       const homeScore = isFinished || isLive ? game.home_score : null;
