@@ -23,6 +23,7 @@ const SCORING = {
   r16:   { exact: 5,  direction: 2 },
   qf:    { exact: 8,  direction: 3 },
   sf:    { exact: 10, direction: 4 },
+  third: { exact: 10, direction: 4 },
   final: { exact: 15, direction: 5 },
 };
 
@@ -30,9 +31,11 @@ function getStageFromType(type) {
   if (type === 'r32' || type === 'r16') return 'r32';
   if (type === 'qf')    return 'qf';
   if (type === 'sf')    return 'sf';
+  if (type === 'third') return 'third';
   if (type === 'final') return 'final';
   return 'r32';
 }
+
 
 function calculatePoints(prediction, result, type) {
   if (!prediction || result.home === null || result.away === null) return { points: 0, type: 'miss' };

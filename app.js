@@ -700,7 +700,7 @@ async function renderPredictions() {
   container.innerHTML = Array(4).fill(`<div class="shimmer-card" style="height:140px;margin-bottom:10px"></div>`).join('');
 
   // Show ALL knockout stages sorted by date — no filter
-  const stageOrder = { r32: 1, qf: 2, sf: 3, final: 4 };
+  const stageOrder = { r32: 1, qf: 2, sf: 3, third: 4, final: 5 };
   const matches = App.knockoutMatches
     .sort((a,b) => {
       const so = (stageOrder[a.type]||9) - (stageOrder[b.type]||9);
@@ -718,7 +718,7 @@ async function renderPredictions() {
   try { userPreds = await DB.getUserPredictions(App.currentUser); } catch {}
 
   // Group by stage for visual separators
-  const stageLabels = { r32:'⚔️ שמינית גמר', qf:'🏅 רבע גמר', sf:'🔥 חצי גמר', final:'🏆 גמר' };
+  const stageLabels = { r32:'⚔️ שמינית גמר', qf:'🏅 רבע גמר', sf:'🔥 חצי גמר', third:'🥉 מקום שלישי', final:'🏆 גמר' };
   let lastStage = null;
   const rows = [];
   for (const m of matches) {
@@ -736,7 +736,8 @@ function renderPredMatchCard(match, userPreds) {
   const pred = userPreds[match.id] || userPreds[String(match.id)];
   const lockStatus  = getMatchLockStatus(match);   // 'open'|'locked'|'live'|'finished'
   const isClickable = lockStatus === 'open';        // only allow betting before kickoff
-  const tagClass = { r32:'tag-r32', qf:'tag-qf', sf:'tag-sf', final:'tag-final' }[match.type] || 'tag-r32';
+  const tagClass = { r32:'tag-r32', qf:'tag-qf', sf:'tag-sf', third:'tag-sf', final:'tag-final' }[match.type] || 'tag-r32';
+
   let cardClass = 'pred-match-card';
   if (isClickable) cardClass += ' clickable';
   if (lockStatus === 'locked') cardClass += ' match-locked';

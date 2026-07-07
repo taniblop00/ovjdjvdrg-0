@@ -50,17 +50,19 @@ const API = (() => {
     'r16': 'שמינית גמר',
     'qf': 'רבע גמר',
     'sf': 'חצי גמר',
+    'third': 'מקום שלישי',
     'final': '🏆 גמר',
   };
+
 
   // Match type to internal type
   function normalizeType(game) {
     const t = (game.type || '').toLowerCase().trim();
-    // The API uses 'r32' for Round of 16 (32 teams -> 16)
-    if (t === 'r32' || t === 'r16') return 'r32';
+    if (t === 'r32' || t === 'r16') return 'r32';  // API uses both for Round of 16
     if (t === 'qf') return 'qf';
     if (t === 'sf') return 'sf';
     if (t === 'final') return 'final';
+    if (t === 'third' || t === '3rd') return 'third'; // 3rd place match
     if (t === 'group') return 'group';
     return 'group';
   }
@@ -128,14 +130,20 @@ const API = (() => {
   function processGames(games) {
     return games.map(game => {
       const type = normalizeType(game);
-      const isFinished = game.finished === 'TRUE' || game.finished === true;
+      const isFinished = (String(game.finished).toUpperCase() === 'TRUE') || game.finished === true;
       const timeElapsedRaw = game.time_elapsed || '';
       const timeElapsed = timeElapsedRaw.toLowerCase().trim();
-      // WHITELIST: match is live ONLY if time_elapsed contains a digit
-      // (e.g. "45", "90+2", "45'") OR is "ht" (halftime).
-      // Everything else ("notstarted","live","upcoming","","null") = NOT live.
+      const matchMinute = game.match_minute || '';
+
+      // WHITELIST: match is LIVE only if:
+      //   - time_elapsed contains a digit ("45", "90+2") or is "ht" (halftime)
+      //   - OR match_minute contains a digit  
+      //   - AND the match is NOT finished
+      // "notstarted", "live", "upcoming", "" etc = NOT live
       const isLive = !isFinished && (
-        /\d/.test(timeElapsed) || timeElapsed === 'ht'
+        /\d/.test(timeElapsed) || 
+        timeElapsed === 'ht' || 
+        (/\d/.test(String(matchMinute)) && String(matchMinute).toLowerCase() !== 'null')
       );
 
       const dateInfo = formatMatchDate(game.local_date);
@@ -212,6 +220,7 @@ const API = (() => {
   function getKnockoutMatches(matches) {
     return matches.filter(m => m.type !== 'group');
   }
+
 
   // Get matches by stage
   function getMatchesByStage(matches, stage) {
