@@ -122,13 +122,15 @@ async function loadExistingUsers() {
     const list = document.getElementById('existing-users-list');
     if (!users || !users.length) { section.classList.add('hidden'); return; }
     section.classList.remove('hidden');
-    list.innerHTML = users.map(u =>
-      `<button class="eu-chip" onclick="quickLogin('${esc(u.name)}')">${esc(u.name)}</button>`
-    ).join('');
+    list.innerHTML = users.map(u => {
+      const initial = (u.name || '?').charAt(0).toUpperCase();
+      return `<button class="eu-chip" data-initial="${initial}" onclick="quickLogin('${esc(u.name)}')">${esc(u.name)}</button>`;
+    }).join('');
   } catch (e) {
     console.warn('loadExistingUsers:', e);
   }
 }
+
 
 function quickLogin(name) {
   document.getElementById('username-input').value = name;

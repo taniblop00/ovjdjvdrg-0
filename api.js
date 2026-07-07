@@ -129,15 +129,18 @@ const API = (() => {
     return games.map(game => {
       const type = normalizeType(game);
       const isFinished = game.finished === 'TRUE' || game.finished === true;
-      const timeElapsed = game.time_elapsed || '';
+      const timeElapsedRaw = game.time_elapsed || '';
+      const timeElapsed = timeElapsedRaw.toLowerCase().trim();
+      // Live = not finished AND time_elapsed has a real value (not empty/finished/upcoming/null)
       const isLive = !isFinished && (
         timeElapsed !== '' &&
         timeElapsed !== 'finished' &&
         timeElapsed !== 'upcoming' &&
-        timeElapsed !== null &&
-        timeElapsed !== 'null'
+        timeElapsed !== 'null' &&
+        timeElapsed !== 'none'
       );
       const dateInfo = formatMatchDate(game.local_date);
+
       const homeScore = isFinished || isLive ? game.home_score : null;
       const awayScore = isFinished || isLive ? game.away_score : null;
 
@@ -159,8 +162,9 @@ const API = (() => {
         away_scorers: parseScorers(game.away_scorers),
         finished: isFinished,
         is_live: isLive,
-        time_elapsed: timeElapsed,
+        time_elapsed: timeElapsedRaw,
         local_date: game.local_date,
+
         dateInfo,
         group: game.group,
         matchday: game.matchday,

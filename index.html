@@ -37,28 +37,22 @@
         <span class="logo-bet">Bet</span><span class="logo-oz">Oz</span>
       </div>
       <div class="login-tagline">ליגת הניחושים המשפחתית 🏆</div>
-      <div class="login-ball">⚽</div>
-      <div class="login-form">
-        <div class="login-label">מי אתה?</div>
-        <input type="text" id="username-input" class="login-input" placeholder="הזן שם..." maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words">
-        <button id="login-btn" class="login-btn" onclick="handleLogin()">כניסה לליגה &nbsp;→</button>
-      </div>
+
+      <!-- Existing users — shown FIRST and BIG -->
       <div id="existing-users-section" class="existing-users hidden">
-        <div class="eu-label">חזור כ:</div>
+        <div class="eu-label">בחר את השחקן שלך:</div>
         <div id="existing-users-list" class="eu-list"></div>
+        <div class="eu-divider"><span>או הזן שם חדש</span></div>
       </div>
-      <div class="login-scoring-wrap">
-        <div class="ls-title">מערכת ניקוד</div>
-        <div class="ls-grid">
-          <div class="ls-item"><span class="ls-stage">שמינית</span><span class="ls-pts"><b>5</b> / 2</span></div>
-          <div class="ls-item"><span class="ls-stage">רבע גמר</span><span class="ls-pts"><b>8</b> / 3</span></div>
-          <div class="ls-item"><span class="ls-stage">חצי גמר</span><span class="ls-pts"><b>10</b> / 4</span></div>
-          <div class="ls-item ls-item--final"><span class="ls-stage">🏆 גמר</span><span class="ls-pts"><b>15</b> / 5</span></div>
-        </div>
-        <div class="ls-legend">מדויק / כיוון נכון</div>
+
+      <!-- Manual login form -->
+      <div class="login-form">
+        <input type="text" id="username-input" class="login-input" placeholder="שם שחקן..." maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words">
+        <button id="login-btn" class="login-btn" onclick="handleLogin()">כניסה לליגה &nbsp;→</button>
       </div>
     </div>
   </div>
+
 
   <!-- Main App -->
   <div id="app" class="hidden">
