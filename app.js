@@ -20,7 +20,8 @@ const App = {
 function isMatchLocked(match) {
   if (!match) return true;
   if (match.finished || match.is_live) return true;
-  if (match.dateInfo?.timestamp && Date.now() >= match.dateInfo.timestamp) return true;
+  // Only lock if we have a real timestamp AND it has passed
+  if (match.dateInfo?.timestamp && match.dateInfo.timestamp > 0 && Date.now() >= match.dateInfo.timestamp) return true;
   return false;
 }
 
@@ -28,7 +29,9 @@ function getMatchLockStatus(match) {
   // Returns: 'open' | 'locked' | 'live' | 'finished'
   if (match.finished) return 'finished';
   if (match.is_live)  return 'live';
-  if (match.dateInfo?.timestamp && Date.now() >= match.dateInfo.timestamp) return 'locked';
+  // Only lock if we have a valid future timestamp that has now passed
+  if (match.dateInfo?.timestamp && match.dateInfo.timestamp > 0 && Date.now() >= match.dateInfo.timestamp) return 'locked';
+  // No timestamp or future timestamp → open for betting
   return 'open';
 }
 
@@ -733,41 +736,48 @@ function renderPredMatchCard(match, userPreds) {
     statusHTML = `<div class="pmc-status pmc-status--up">${match.dateInfo?.time || 'בקרוב'}</div>`;
   }
 
+  // TIP button — always shown for open matches with known teams
+  const hasBothTeams = !!(match.home_team_name && match.away_team_name);
+  const tipBtnHtml = (isClickable && hasBothTeams)
+    ? `<button class="tip-btn" onclick="event.stopPropagation();openTipModal('${match.id}')">\ud83d\udd2e TIP</button>`
+    : '';
+
   let bottomHTML = '';
   if (pred) {
     let resultBadge = '';
     if (match.finished && match.home_score !== null) {
       const r = DB.calculatePoints(pred, { home: match.home_score, away: match.away_score }, match.type);
-      if (r.type === 'exact') { resultBadge = `<span class="pmc-result-badge pmc-result-badge--exact">🎯 +${r.points} נק'</span>`; cardClass += ' pred-exact'; }
-      else if (r.type === 'direction') { resultBadge = `<span class="pmc-result-badge pmc-result-badge--dir">✅ +${r.points} נק'</span>`; cardClass += ' pred-correct'; }
-      else { resultBadge = `<span class="pmc-result-badge pmc-result-badge--miss">❌ 0 נק'</span>`; }
+      if (r.type === 'exact') { resultBadge = `<span class="pmc-result-badge pmc-result-badge--exact">\ud83c\udfaf +${r.points} \u05e0\u05e7'</span>`; cardClass += ' pred-exact'; }
+      else if (r.type === 'direction') { resultBadge = `<span class="pmc-result-badge pmc-result-badge--dir">\u2705 +${r.points} \u05e0\u05e7'</span>`; cardClass += ' pred-correct'; }
+      else { resultBadge = `<span class="pmc-result-badge pmc-result-badge--miss">\u274c 0 \u05e0\u05e7'</span>`; }
     }
     cardClass += ' has-pred';
-    const editBtn = isClickable ? `<span style="font-size:11px;color:var(--orange);margin-right:6px">ערוך</span>` : '';
-    const lockedBadge = lockStatus === 'locked' ? `<span class="pmc-result-badge" style="background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)">🔒 נעול</span>` : '';
+    const editBtn = isClickable ? `<span style="font-size:11px;color:var(--orange);margin-right:6px">\u05e2\u05e8\u05d5\u05da</span>` : '';
+    const lockedBadge = (lockStatus === 'locked' || lockStatus === 'live') ? `<span class="pmc-result-badge" style="background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25)">\ud83d\udd12 \u05e0\u05e2\u05d5\u05dc</span>` : '';
     bottomHTML = `<div class="pmc-bottom">
       <div class="pmc-your-pred">
-        🗳️ ניחוש: <span class="pmc-pred-score">${pred.home}:${pred.away}</span>
+        \ud83d\uddf3\ufe0f \u05e0\u05d9\u05d7\u05d5\u05e9: <span class="pmc-pred-score">${pred.home}:${pred.away}</span>
         ${editBtn}
       </div>
-      <div style="display:flex;gap:6px;align-items:center">
-        ${resultBadge}${lockedBadge}
-        ${isClickable ? `<button class="tip-btn" onclick="event.stopPropagation();openTipModal('${match.id}')">🔮 TIP</button>` : ''}
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        ${resultBadge}${lockedBadge}${tipBtnHtml}
       </div>
     </div>`;
   } else if (isClickable) {
     bottomHTML = `<div class="pmc-bottom">
-      <div class="pmc-cta"><span>✏️</span>לחץ כדי לשים תוצאה</div>
-      <button class="tip-btn" onclick="event.stopPropagation();openTipModal('${match.id}')">🔮 TIP</button>
+      <div class="pmc-cta"><span>\u270f\ufe0f</span>\u05dc\u05d7\u05e5 \u05db\u05d3\u05d9 \u05dc\u05e9\u05d9\u05dd \u05ea\u05d5\u05e6\u05d0\u05d4</div>
+      ${tipBtnHtml}
     </div>`;
-  } else if (lockStatus === 'locked') {
+  } else if (lockStatus === 'locked' || lockStatus === 'live') {
+    const lockedText = lockStatus === 'live' ? '\ud83d\udd34 \u05de\u05e9\u05d7\u05e7 \u05de\u05ea\u05e0\u05d4\u05dc \u05e2\u05db\u05e9\u05d9\u05d5' : '\ud83d\udd12 \u05d4\u05d9\u05de\u05d5\u05e8\u05d9\u05dd \u05e0\u05e1\u05d2\u05e8\u05d5';
     bottomHTML = `<div class="pmc-bottom">
-      <div style="font-size:12px;color:var(--red);font-weight:600">🔒 הימורים נסגרו — המשחק התחיל</div>
+      <div style="font-size:12px;color:var(--red);font-weight:600">${lockedText}</div>
     </div>`;
+  } else if (lockStatus === 'finished') {
+    bottomHTML = `<div class="pmc-bottom"><div style="font-size:12px;color:var(--w30)">\u05dc\u05d0 \u05d4\u05d5\u05d2\u05e9 \u05e0\u05d9\u05d7\u05d5\u05e9</div></div>`;
   } else {
-    // future match, no teams yet - still allow TIP
     bottomHTML = `<div class="pmc-bottom">
-      <div class="pmc-cta" style="color:var(--w30)"><span>⏳</span>קבוצות יקבעו בקרוב</div>
+      <div class="pmc-cta" style="color:var(--w30)"><span>\u23f3</span>\u05e7\u05d1\u05d5\u05e6\u05d5\u05ea \u05d9\u05e7\u05d1\u05e2\u05d5 \u05d1\u05e7\u05e8\u05d5\u05d1</div>
     </div>`;
   }
 
@@ -802,11 +812,10 @@ function renderPredMatchCard(match, userPreds) {
 // ═══════════════════════════════════════════
 async function openPredictionModal(matchId) {
   const match = App.knockoutMatches.find(m => m.id == matchId);
-  if (!match) return;
+  if (!match) { showToast('משחק לא נמצא', 'error'); return; }
 
-  // Check lock status
   const lockStatus = getMatchLockStatus(match);
-  if (lockStatus !== 'open') {
+  if (lockStatus === 'finished' || lockStatus === 'live' || lockStatus === 'locked') {
     showToast('🔒 הימורים נסגרו למשחק זה', 'error');
     return;
   }
