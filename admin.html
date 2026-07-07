@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>OzBet Admin | ניהול</title>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0a0a0f; color: white; font-family: 'Heebo', sans-serif; direction: rtl; padding: 32px; min-height: 100vh; }
+    h1 { font-size: 32px; font-weight: 900; margin-bottom: 8px; }
+    h1 span { color: #f97316; }
+    .subtitle { color: rgba(255,255,255,0.5); margin-bottom: 32px; }
+    .card { background: #111118; border: 1px solid rgba(255,255,255,0.1); border-radius: 16px; padding: 24px; margin-bottom: 24px; }
+    .card h2 { font-size: 18px; font-weight: 700; margin-bottom: 16px; color: #f97316; }
+    .btn { background: linear-gradient(135deg, #ea580c, #f97316); border: none; border-radius: 8px; color: white; cursor: pointer; font-family: 'Heebo', sans-serif; font-size: 14px; font-weight: 700; padding: 10px 20px; margin-left: 8px; transition: all 0.2s; }
+    .btn:hover { opacity: 0.85; }
+    .btn-danger { background: linear-gradient(135deg, #dc2626, #ef4444); }
+    .data-display { background: #1a1a24; border-radius: 8px; padding: 16px; font-size: 12px; max-height: 300px; overflow-y: auto; white-space: pre-wrap; color: rgba(255,255,255,0.8); font-family: monospace; margin-top: 12px; }
+    .stat { display: inline-block; background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); border-radius: 8px; padding: 12px 20px; margin-left: 12px; margin-bottom: 12px; text-align: center; }
+    .stat-num { font-size: 28px; font-weight: 900; color: #f97316; display: block; }
+    .stat-label { font-size: 11px; color: rgba(255,255,255,0.5); }
+    label { display: block; margin-bottom: 6px; color: rgba(255,255,255,0.6); font-size: 13px; }
+    input, select { background: #1a1a24; border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; color: white; font-family: 'Heebo', sans-serif; font-size: 14px; padding: 10px 14px; width: 100%; margin-bottom: 12px; }
+    .back-btn { display: inline-block; margin-bottom: 24px; color: rgba(255,255,255,0.6); text-decoration: none; font-size: 14px; }
+    .back-btn:hover { color: #f97316; }
+  </style>
+</head>
+<body>
+  <a href="index.html" class="back-btn">← חזור לאפליקציה הראשית</a>
+  <h1>Oz<span>Bet</span> Admin</h1>
+  <p class="subtitle">ניהול נתונים, משתמשים וניחושים</p>
+
+  <div class="card">
+    <h2>📊 סטטיסטיקות</h2>
+    <div id="stats-area">טוען...</div>
+  </div>
+
+  <div class="card">
+    <h2>👥 משתמשים</h2>
+    <div id="users-area">טוען...</div>
+    <button class="btn btn-danger" onclick="clearUsers()" style="margin-top:12px">🗑️ נקה כל המשתמשים (שמור ניחושים)</button>
+  </div>
+
+  <div class="card">
+    <h2>🗳️ ניחושים</h2>
+    <div id="predictions-area">טוען...</div>
+    <button class="btn btn-danger" onclick="clearPredictions()" style="margin-top:12px">🗑️ נקה כל הניחושים</button>
+  </div>
+
+  <div class="card">
+    <h2>🔧 כלים</h2>
+    <button class="btn" onclick="exportData()">📤 ייצוא נתונים (JSON)</button>
+    <button class="btn" onclick="refreshStats()">🔄 רענן</button>
+    <button class="btn btn-danger" onclick="clearAll()">💣 נקה הכל</button>
+  </div>
+
+  <div class="card">
+    <h2>📡 בדיקת API</h2>
+    <button class="btn" onclick="testAPI()">בדוק חיבור ל-API</button>
+    <div id="api-result" class="data-display" style="display:none"></div>
+  </div>
+
+  <script>
+    const PREFIX = 'ozbet_';
+
+    function getKey(k) {
+      try { const v = localStorage.getItem(PREFIX + k); return v ? JSON.parse(v) : null; } catch(e) { return null; }
+    }
+    function setKey(k, v) { localStorage.setItem(PREFIX + k, JSON.stringify(v)); }
+
+    function refreshStats() {
+      const users = getKey('users') || [];
+      const preds = getKey('predictions') || {};
+      const matchCount = Object.keys(preds).length;
+      let totalPreds = 0;
+      for (const mid in preds) { totalPreds += Object.keys(preds[mid]).length; }
+
+      document.getElementById('stats-area').innerHTML = `
+        <div class="stat"><span class="stat-num">${users.length}</span><div class="stat-label">משתמשים</div></div>
+        <div class="stat"><span class="stat-num">${matchCount}</span><div class="stat-label">משחקים עם ניחושים</div></div>
+        <div class="stat"><span class="stat-num">${totalPreds}</span><div class="stat-label">סה"כ ניחושים</div></div>
+      `;
+
+      document.getElementById('users-area').innerHTML = `
+        <div class="data-display">${users.length > 0 ? JSON.stringify(users, null, 2) : 'אין משתמשים'}</div>
+      `;
+
+      document.getElementById('predictions-area').innerHTML = `
+        <div class="data-display">${matchCount > 0 ? JSON.stringify(preds, null, 2) : 'אין ניחושים'}</div>
+      `;
+    }
+
+    function clearUsers() {
+      if (!confirm('למחוק את כל המשתמשים?')) return;
+      localStorage.removeItem(PREFIX + 'users');
+      localStorage.removeItem(PREFIX + 'current_user');
+      refreshStats();
+      alert('משתמשים נמחקו');
+    }
+
+    function clearPredictions() {
+      if (!confirm('למחוק את כל הניחושים?')) return;
+      localStorage.removeItem(PREFIX + 'predictions');
+      localStorage.removeItem(PREFIX + 'last_scores');
+      refreshStats();
+      alert('ניחושים נמחקו');
+    }
+
+    function clearAll() {
+      if (!confirm('למחוק את כל הנתונים? פעולה זו אינה הפיכה!')) return;
+      Object.keys(localStorage).filter(k => k.startsWith(PREFIX)).forEach(k => localStorage.removeItem(k));
+      refreshStats();
+      alert('כל הנתונים נמחקו');
+    }
+
+    function exportData() {
+      const data = {
+        users: getKey('users'),
+        predictions: getKey('predictions'),
+        exportedAt: new Date().toISOString()
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'ozbet-data-' + new Date().toISOString().slice(0,10) + '.json';
+      a.click();
+    }
+
+    async function testAPI() {
+      const resultEl = document.getElementById('api-result');
+      resultEl.style.display = 'block';
+      resultEl.textContent = 'מתחבר ל-API...';
+      try {
+        const resp = await fetch('https://worldcup26.ir/get/games');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const data = await resp.json();
+        const knockout = data.games.filter(g => g.type !== 'group');
+        resultEl.textContent = `✅ API זמין!\nסה"כ משחקים: ${data.games.length}\nמשחקי נוק-אאוט: ${knockout.length}\n\nדוגמת משחק:\n${JSON.stringify(knockout[0] || data.games[0], null, 2)}`;
+      } catch(e) {
+        resultEl.textContent = '❌ שגיאה: ' + e.message;
+      }
+    }
+
+    refreshStats();
+  </script>
+</body>
+</html>

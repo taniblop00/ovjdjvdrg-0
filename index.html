@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>BetOz | מונדיאל 2026</title>
+  <meta name="description" content="BetOz - ליגת ניחושים משפחתית למונדיאל 2026">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="BetOz">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0a0a0f">
+  <link rel="manifest" href="manifest.json">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="particles-container"></div>
+
+  <!-- Loading Screen -->
+  <div id="loading-screen">
+    <div class="loading-logo">
+      <span class="logo-bet">Bet</span><span class="logo-oz">Oz</span>
+    </div>
+    <div class="loading-subtitle">ליגת ניחושים מונדיאל 2026</div>
+    <div class="loading-bar-wrap"><div class="loading-bar"></div></div>
+    <div class="loading-text">מתחבר לענן...</div>
+  </div>
+
+  <!-- Login Screen -->
+  <div id="login-screen" class="hidden">
+    <div class="login-inner">
+      <div class="login-logo">
+        <span class="logo-bet">Bet</span><span class="logo-oz">Oz</span>
+      </div>
+      <div class="login-tagline">ליגת הניחושים המשפחתית 🏆</div>
+      <div class="login-ball">⚽</div>
+      <div class="login-form">
+        <div class="login-label">מי אתה?</div>
+        <input type="text" id="username-input" class="login-input" placeholder="הזן שם..." maxlength="20" autocomplete="off" autocorrect="off" autocapitalize="words">
+        <button id="login-btn" class="login-btn" onclick="handleLogin()">כניסה לליגה &nbsp;→</button>
+      </div>
+      <div id="existing-users-section" class="existing-users hidden">
+        <div class="eu-label">חזור כ:</div>
+        <div id="existing-users-list" class="eu-list"></div>
+      </div>
+      <div class="login-scoring-wrap">
+        <div class="ls-title">מערכת ניקוד</div>
+        <div class="ls-grid">
+          <div class="ls-item"><span class="ls-stage">שמינית</span><span class="ls-pts"><b>5</b> / 2</span></div>
+          <div class="ls-item"><span class="ls-stage">רבע גמר</span><span class="ls-pts"><b>8</b> / 3</span></div>
+          <div class="ls-item"><span class="ls-stage">חצי גמר</span><span class="ls-pts"><b>10</b> / 4</span></div>
+          <div class="ls-item ls-item--final"><span class="ls-stage">🏆 גמר</span><span class="ls-pts"><b>15</b> / 5</span></div>
+        </div>
+        <div class="ls-legend">מדויק / כיוון נכון</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main App -->
+  <div id="app" class="hidden">
+    <div class="status-bar-spacer"></div>
+
+    <!-- Header -->
+    <header class="app-header">
+      <div class="app-header-inner">
+        <div class="app-logo"><span class="logo-bet">Bet</span><span class="logo-oz">Oz</span></div>
+        <div class="app-header-center" id="header-title">BetOz</div>
+        <div class="app-header-right">
+          <div class="app-avatar" id="header-avatar">א</div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Ticker -->
+    <div class="ticker-bar">
+      <span class="ticker-live">🔴</span>
+      <div class="ticker-scroll"><div class="ticker-text" id="ticker-text">טוען...</div></div>
+    </div>
+
+    <!-- Content -->
+    <main class="app-content">
+
+      <section id="section-home" class="page-section">
+        <div id="home-content"></div>
+      </section>
+
+      <section id="section-predictions" class="page-section hidden">
+        <div class="stage-filter-bar">
+          <button class="sf-btn active" id="sf-r16" onclick="setStageFilter('r16')">שמינית גמר</button>
+          <button class="sf-btn" id="sf-qf"    onclick="setStageFilter('qf')">רבע גמר</button>
+          <button class="sf-btn" id="sf-sf"    onclick="setStageFilter('sf')">חצי גמר</button>
+          <button class="sf-btn" id="sf-final" onclick="setStageFilter('final')">גמר</button>
+        </div>
+        <div id="predictions-content"></div>
+      </section>
+
+      <section id="section-leaderboard" class="page-section hidden">
+        <div id="leaderboard-content"></div>
+      </section>
+
+      <section id="section-live" class="page-section hidden">
+        <div class="live-header-info">
+          <span class="live-dot-big"></span>
+          <span id="live-update-time">מתעדכן כל 60 שניות</span>
+        </div>
+        <div id="live-content"></div>
+      </section>
+
+    </main>
+
+    <!-- Bottom Nav -->
+    <nav class="bottom-nav">
+      <button class="bn-btn active" id="bn-home" onclick="showSection('home')">
+        <svg viewBox="0 0 24 24"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>ראשי</span>
+      </button>
+      <button class="bn-btn" id="bn-predictions" onclick="showSection('predictions')">
+        <svg viewBox="0 0 24 24"><path d="M9 11H7v2h2v-2zm4 0h-2v2h2v-2zm4 0h-2v2h2v-2zm2-7h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V9h14v11z"/></svg>
+        <span>ניחושים</span>
+      </button>
+      <button class="bn-btn" id="bn-leaderboard" onclick="showSection('leaderboard')">
+        <svg viewBox="0 0 24 24"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
+        <span>טבלה</span>
+      </button>
+      <button class="bn-btn" id="bn-live" onclick="showSection('live')">
+        <span class="live-dot"></span>
+        <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3c-1.65-1.66-4.34-1.66-6 0zm-4-4l2 2c2.76-2.76 7.24-2.76 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+        <span>חי</span>
+      </button>
+    </nav>
+    <div class="bottom-safe-area"></div>
+  </div>
+
+  <!-- Prediction Modal -->
+  <div id="prediction-modal" class="modal-overlay hidden">
+    <div class="modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="modal-stage-label" id="modal-stage-label">שמינית גמר</div>
+      <div class="modal-matchup">
+        <div class="mm-team">
+          <div class="mm-flag" id="mm-home-flag">🏳️</div>
+          <div class="mm-name" id="mm-home-name">בית</div>
+        </div>
+        <div class="mm-vs">VS</div>
+        <div class="mm-team">
+          <div class="mm-flag" id="mm-away-flag">🏳️</div>
+          <div class="mm-name" id="mm-away-name">חוץ</div>
+        </div>
+      </div>
+      <div class="modal-score-row">
+        <div class="score-input-wrap">
+          <button class="score-stepper" onclick="stepScore('home', 1)">+</button>
+          <input type="number" id="pred-home-score" class="score-input-big" min="0" max="20" value="0">
+          <button class="score-stepper" onclick="stepScore('home', -1)">−</button>
+        </div>
+        <div class="score-divider">:</div>
+        <div class="score-input-wrap">
+          <button class="score-stepper" onclick="stepScore('away', 1)">+</button>
+          <input type="number" id="pred-away-score" class="score-input-big" min="0" max="20" value="0">
+          <button class="score-stepper" onclick="stepScore('away', -1)">−</button>
+        </div>
+      </div>
+      <div class="modal-pts-row">
+        <div class="mpr-item mpr-exact">
+          <span class="mpr-num" id="modal-pts-exact">5</span>
+          <span class="mpr-label">נק' מדויק 🎯</span>
+        </div>
+        <div class="mpr-item mpr-dir">
+          <span class="mpr-num" id="modal-pts-dir">2</span>
+          <span class="mpr-label">נק' כיוון ✅</span>
+        </div>
+      </div>
+      <div class="modal-existing-row" id="modal-existing-row" style="display:none">
+        <span class="mer-label">הניחוש הקיים:</span>
+        <span class="mer-val" id="modal-existing-val">0:0</span>
+      </div>
+      <button class="modal-submit-btn" id="modal-submit-btn" onclick="submitPrediction()">שמור ניחוש ✓</button>
+      <button class="modal-cancel-btn" onclick="closePredictionModal()">ביטול</button>
+    </div>
+  </div>
+
+  <!-- AI TIP Modal -->
+  <div id="tip-modal" class="modal-overlay hidden">
+    <div class="modal-sheet tip-modal-sheet">
+      <div class="modal-handle"></div>
+      <div id="tip-modal-content">
+        <!-- Rendered by JS -->
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+  <div id="confetti-container"></div>
+
+  <script src="config.js"></script>
+  <script src="db.js"></script>
+  <script src="api.js"></script>
+  <script src="tip.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
