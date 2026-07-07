@@ -82,13 +82,15 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 
 /* Existing users — BIG and prominent */
 .existing-users{width:100%}
-.eu-label{font-size:13px;font-weight:700;color:var(--w60);text-align:center;margin-bottom:12px;text-transform:uppercase;letter-spacing:.8px}
-.eu-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;width:100%}
-.eu-chip{background:linear-gradient(135deg,var(--black-3),var(--black-2));border:1.5px solid var(--w12);border-radius:var(--r);color:var(--white);font-size:18px;font-weight:800;padding:18px 12px;transition:all .2s;text-align:center;width:100%;display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer}
-.eu-chip::before{content:attr(data-initial);width:44px;height:44px;border-radius:50%;background:linear-gradient(135deg,var(--orange-d),var(--orange));display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:900;color:white;margin:0 auto}
-.eu-chip:active,.eu-chip:hover{border-color:var(--orange);background:var(--o10);transform:scale(.97)}
+.eu-label{font-size:13px;font-weight:700;color:var(--w60);text-align:center;margin-bottom:14px;text-transform:uppercase;letter-spacing:.8px}
+.eu-list{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%}
+.eu-chip{background:linear-gradient(135deg,var(--black-3),rgba(249,115,22,.07));border:1.5px solid var(--w12);border-radius:14px;color:var(--white);font-size:15px;font-weight:800;padding:16px 8px;transition:all .18s;text-align:center;width:100%;display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.eu-chip-ava{width:48px;height:48px;border-radius:50%;background:linear-gradient(135deg,var(--orange-d),var(--orange));display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:900;color:white;flex-shrink:0}
+.eu-chip-name{font-size:15px;font-weight:800;color:var(--white);white-space:nowrap}
+.eu-chip:active,.eu-chip:hover{border-color:var(--orange);background:rgba(249,115,22,.15);transform:scale(.96)}
 .eu-divider{width:100%;display:flex;align-items:center;gap:10px;color:var(--w30);font-size:12px;margin-top:4px}
 .eu-divider::before,.eu-divider::after{content:'';flex:1;height:1px;background:var(--w12)}
+
 
 .login-scoring-wrap{width:100%;background:var(--black-2);border:1px solid var(--w12);border-radius:var(--r);padding:18px}
 .ls-title{text-align:center;font-size:13px;font-weight:700;color:var(--gold);margin-bottom:12px}

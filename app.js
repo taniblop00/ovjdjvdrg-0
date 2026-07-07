@@ -116,18 +116,33 @@ function hideLoginScreen() {
 }
 
 async function loadExistingUsers() {
+  // Hardcoded fallback so login always shows even if Supabase is down
+  const KNOWN_USERS = ['\u05e8\u05d5\u05e0\u05d9', '\u05d0\u05d5\u05e8\u05d9', '\u05d9\u05d4\u05d5\u05e0\u05ea\u05df'];
+  const section = document.getElementById('existing-users-section');
+  const list = document.getElementById('existing-users-list');
+
+  function renderChips(names) {
+    list.innerHTML = names.map(name => {
+      const initial = name.charAt(0).toUpperCase();
+      return `<button class="eu-chip" onclick="quickLogin('${esc(name)}')">
+        <div class="eu-chip-ava">${initial}</div>
+        <div class="eu-chip-name">${esc(name)}</div>
+      </button>`;
+    }).join('');
+    section.classList.remove('hidden');
+  }
+
+  // Show fallback immediately so it's visible right away
+  renderChips(KNOWN_USERS);
+
+  // Then try to load from Supabase and refresh
   try {
     const users = await DB.getUsers();
-    const section = document.getElementById('existing-users-section');
-    const list = document.getElementById('existing-users-list');
-    if (!users || !users.length) { section.classList.add('hidden'); return; }
-    section.classList.remove('hidden');
-    list.innerHTML = users.map(u => {
-      const initial = (u.name || '?').charAt(0).toUpperCase();
-      return `<button class="eu-chip" data-initial="${initial}" onclick="quickLogin('${esc(u.name)}')">${esc(u.name)}</button>`;
-    }).join('');
+    if (users && users.length) {
+      renderChips(users.map(u => u.name));
+    }
   } catch (e) {
-    console.warn('loadExistingUsers:', e);
+    console.warn('loadExistingUsers Supabase failed, using fallback:', e);
   }
 }
 
