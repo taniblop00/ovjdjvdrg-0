@@ -14,7 +14,8 @@
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20260708004">
+
 </head>
 <body>
 
@@ -216,10 +217,15 @@
   <div id="toast-container"></div>
   <div id="confetti-container"></div>
 
-  <script src="config.js"></script>
-  <script src="db.js"></script>
-  <script src="api.js"></script>
-  <script src="tip.js"></script>
-  <script src="app.js"></script>
+  <script>
+    // Clear stale API cache on every fresh page load so new code processes fresh data
+    try { localStorage.removeItem('ozbet_api_cache'); } catch(e) {}
+  </script>
+  <script src="config.js?v=20260708004"></script>
+  <script src="db.js?v=20260708004"></script>
+  <script src="api.js?v=20260708004"></script>
+  <script src="tip.js?v=20260708004"></script>
+  <script src="app.js?v=20260708004"></script>
 </body>
 </html>
+
