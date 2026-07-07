@@ -67,7 +67,11 @@
     <!-- Header -->
     <header class="app-header">
       <div class="app-header-inner">
-        <div class="app-logo"><span class="logo-bet">Bet</span><span class="logo-oz">Oz</span></div>
+        <div class="app-logo"
+          onmousedown="adminPressStart(event)" onmouseup="adminPressEnd()" onmouseleave="adminPressEnd()"
+          ontouchstart="adminPressStart(event)" ontouchend="adminPressEnd()" ontouchcancel="adminPressEnd()"
+          style="user-select:none;-webkit-user-select:none"
+        ><span class="logo-bet">Bet</span><span class="logo-oz">Oz</span></div>
         <div class="app-header-center" id="header-title">BetOz</div>
         <div class="app-header-right">
           <div class="app-avatar" id="header-avatar">א</div>
@@ -190,6 +194,21 @@
       <div id="tip-modal-content">
         <!-- Rendered by JS -->
       </div>
+    </div>
+  </div>
+
+  <!-- Hidden Admin Modal (יהונתן only) -->
+  <div id="admin-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeAdminPanel()">
+    <div class="modal-sheet admin-modal-sheet">
+      <div class="modal-handle"></div>
+      <div class="adm-header">
+        <span style="font-size:22px">⚙️</span>
+        <div>
+          <div style="font-size:16px;font-weight:900">לוח ניהול</div>
+          <div style="font-size:11px;color:var(--w30)">גישה מוגבלת</div>
+        </div>
+      </div>
+      <div id="admin-content"></div>
     </div>
   </div>
 

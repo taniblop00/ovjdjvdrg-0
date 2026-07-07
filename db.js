@@ -82,6 +82,19 @@ const SB = {
     return r.json();
   },
 
+  async patch(table, query, body) {
+    const r = await fetch(`${SUPABASE_URL}/rest/v1/${table}?${query}`, {
+      method: 'PATCH',
+      headers: this.headers(),
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) {
+      const err = await r.text();
+      throw new Error(`SB patch ${table}: ${r.status} ${err}`);
+    }
+    return r.json();
+  },
+
   // Realtime subscription via Supabase websocket (postgres_changes)
   realtimeChannel: null,
   realtimeWS: null,
@@ -185,10 +198,42 @@ async function getAllPredictions() {
 }
 
 // ═══════════════════════════════════════════
+// ADMIN FUNCTIONS
+// ═══════════════════════════════════════════
+async function setUserBonusPoints(userName, bonus) {
+  // Try patch first (user exists), then upsert
+  try {
+    await SB.patch('users', `name=eq.${encodeURIComponent(userName)}`, { bonus_points: parseInt(bonus) });
+  } catch {
+    await SB.upsert('users', { name: userName, bonus_points: parseInt(bonus) }, 'name');
+  }
+}
+
+async function setMatchOverride(matchId, homeScore, awayScore) {
+  return SB.upsert('match_overrides', {
+    match_id: String(matchId),
+    home_score: parseInt(homeScore),
+    away_score: parseInt(awayScore),
+    set_at: new Date().toISOString(),
+  }, 'match_id');
+}
+
+async function getMatchOverrides() {
+  try {
+    const rows = await SB.select('match_overrides', 'select=match_id,home_score,away_score');
+    const map = {};
+    for (const r of (rows || [])) map[r.match_id] = { home: r.home_score, away: r.away_score };
+    return map;
+  } catch { return {}; }
+}
+
+// ═══════════════════════════════════════════
 // LEADERBOARD
 // ═══════════════════════════════════════════
 async function computeLeaderboard(matches) {
-  const [users, allPreds] = await Promise.all([getUsers(), getAllPredictions()]);
+  const [users, allPreds, overrides] = await Promise.all([
+    getUsers(), getAllPredictions(), getMatchOverrides()
+  ]);
   // Index predictions by matchId → userName
   const predsMap = {};
   for (const p of (allPreds || [])) {
@@ -205,10 +250,22 @@ async function computeLeaderboard(matches) {
       const pred = predsMap[matchId][user.name];
       if (!pred) continue;
       const match = matches.find(m => m.id == matchId);
-      if (!match || !match.finished) continue;
-      const hs = match.home_score, as = match.away_score;
-      if (hs === null || hs === undefined || as === null || as === undefined) continue;
-      const r = calculatePoints(pred, { home: hs, away: as }, match.type);
+      if (!match) continue;
+
+      // Use admin override if available, else API result
+      const override = overrides[String(matchId)];
+      let hs, as_;
+      if (override) {
+        hs  = override.home;
+        as_ = override.away;
+      } else {
+        if (!match.finished) continue;
+        hs  = match.home_score;
+        as_ = match.away_score;
+      }
+      if (hs === null || hs === undefined || as_ === null || as_ === undefined) continue;
+
+      const r = calculatePoints(pred, { home: hs, away: as_ }, match.type);
       totalPoints += r.points;
       if (r.type === 'exact') exactCount++;
       else if (r.type === 'direction') dirCount++;
@@ -267,4 +324,8 @@ const DB = {
   calculatePoints,
   SCORING,
   getStageFromType,
+  // admin
+  setUserBonusPoints,
+  setMatchOverride,
+  getMatchOverrides,
 };

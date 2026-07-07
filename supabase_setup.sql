@@ -26,16 +26,32 @@ CREATE TABLE IF NOT EXISTS public.predictions (
 );
 
 -- ════════════════════════════════
+-- MATCH OVERRIDES TABLE (admin only)
+-- ════════════════════════════════
+CREATE TABLE IF NOT EXISTS public.match_overrides (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  match_id TEXT UNIQUE NOT NULL,
+  home_score INTEGER NOT NULL,
+  away_score INTEGER NOT NULL,
+  set_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+
+-- ════════════════════════════════
 -- ROW LEVEL SECURITY (allow all for now - family app)
 -- ════════════════════════════════
 ALTER TABLE public.users ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.predictions ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.match_overrides ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Allow all users" ON public.users;
 DROP POLICY IF EXISTS "Allow all predictions" ON public.predictions;
+DROP POLICY IF EXISTS "Allow all overrides" ON public.match_overrides;
 
 CREATE POLICY "Allow all users" ON public.users FOR ALL USING (true) WITH CHECK (true);
 CREATE POLICY "Allow all predictions" ON public.predictions FOR ALL USING (true) WITH CHECK (true);
+CREATE POLICY "Allow all overrides" ON public.match_overrides FOR ALL USING (true) WITH CHECK (true);
+
 
 -- ════════════════════════════════
 -- ENABLE REALTIME

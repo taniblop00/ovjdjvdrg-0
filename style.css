@@ -482,6 +482,39 @@ button{cursor:pointer;border:none;background:none;color:inherit}
 .pp-dir{background:rgba(34,197,94,.15);color:var(--green);border-color:rgba(34,197,94,.25)}
 .pp-miss{background:rgba(239,68,68,.12);color:var(--red);border-color:rgba(239,68,68,.2)}
 
+/* ══════════════════════════════════════════
+   HIDDEN ADMIN PANEL
+══════════════════════════════════════════ */
+.admin-modal-sheet{max-height:92dvh;overflow-y:auto;padding-bottom:max(28px,var(--safe-bottom))}
+.adm-header{display:flex;align-items:center;gap:12px;padding:4px 0 16px;border-bottom:1px solid var(--w6);margin-bottom:16px}
+.adm-section{margin-bottom:20px}
+.adm-section-title{font-size:13px;font-weight:800;color:var(--orange);text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px}
+.adm-hint{font-size:11px;color:var(--w30);margin-bottom:12px}
+
+/* user rows */
+.adm-user-row{display:flex;align-items:center;gap:10px;background:var(--black-2);border:1px solid var(--w6);border-radius:var(--r);padding:10px 12px;margin-bottom:6px}
+.adm-user-ava{width:36px;height:36px;border-radius:50%;background:linear-gradient(135deg,var(--orange-d),var(--orange));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:900;color:white;flex-shrink:0}
+.adm-user-info{flex:1;min-width:0}
+.adm-user-name{font-size:14px;font-weight:700}
+.adm-user-total{font-size:11px;color:var(--w60)}
+.adm-bonus-ctrl{display:flex;flex-direction:column}
+.adm-bonus-input{width:52px;background:var(--black-3);border:1px solid var(--w6);border-radius:8px;color:var(--white);font-size:15px;font-weight:700;text-align:center;padding:4px;outline:none}
+.adm-bonus-input:focus{border-color:var(--orange)}
+.adm-step-btn{width:28px;height:28px;border-radius:8px;border:1px solid var(--w6);background:var(--black-3);color:var(--white);font-size:18px;line-height:1;cursor:pointer;font-weight:700;display:flex;align-items:center;justify-content:center}
+.adm-save-btn{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.3);border-radius:8px;padding:6px 10px;font-size:14px;font-weight:800;cursor:pointer;flex-shrink:0}
+.adm-save-btn:active{transform:scale(.93)}
+.adm-clear-btn{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.25);border-radius:8px;padding:6px 10px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0}
+
+/* match rows */
+.adm-match-row{background:var(--black-2);border:1px solid var(--w6);border-radius:var(--r);padding:10px 12px;margin-bottom:6px;display:flex;flex-direction:column;gap:8px}
+.adm-match-info{display:flex;flex-direction:column;gap:3px}
+.adm-match-tag{font-size:10px;font-weight:700;color:var(--orange);text-transform:uppercase;letter-spacing:.5px}
+.adm-match-teams{font-size:13px;font-weight:700}
+.adm-match-api{font-size:10px;color:var(--w30)}
+.adm-score-ctrl{display:flex;align-items:center;gap:8px}
+.adm-score-input{width:44px;background:var(--black-3);border:1px solid var(--w6);border-radius:8px;color:var(--white);font-size:18px;font-weight:800;text-align:center;padding:6px 4px;outline:none}
+.adm-score-input:focus{border-color:var(--orange)}
+
 /* Responsive */
 @media(min-width:640px){
   .app-content{max-width:480px;margin:0 auto}

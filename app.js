@@ -173,6 +173,175 @@ function handleLogout() {
 }
 
 // ═══════════════════════════════════════════
+// HIDDEN ADMIN PANEL (יהונתן only)
+// ═══════════════════════════════════════════
+function isAdmin() {
+  return App.currentUser === 'יהונתן';
+}
+
+// Long-press on BetOz logo to open admin panel
+let _adminPressTimer = null;
+function adminPressStart(e) {
+  if (!isAdmin()) return;
+  _adminPressTimer = setTimeout(() => {
+    _adminPressTimer = null;
+    openAdminPanel();
+    // Subtle haptic feedback if available
+    if (navigator.vibrate) navigator.vibrate([30, 20, 30]);
+  }, 1500);
+}
+function adminPressEnd() {
+  if (_adminPressTimer) { clearTimeout(_adminPressTimer); _adminPressTimer = null; }
+}
+
+async function openAdminPanel() {
+  const modal   = document.getElementById('admin-modal');
+  const content = document.getElementById('admin-content');
+  modal.classList.remove('hidden');
+
+  content.innerHTML = `
+    <div class="shimmer-card" style="height:60px;margin-bottom:8px"></div>
+    <div class="shimmer-card" style="height:200px;margin-bottom:8px"></div>
+    <div class="shimmer-card" style="height:300px"></div>`;
+
+  try {
+    const [users, overrides] = await Promise.all([
+      DB.getUsers(),
+      DB.getMatchOverrides(),
+    ]);
+    const knockoutMatches = App.knockoutMatches;
+
+    content.innerHTML = `
+      <!-- ─── SECTION: User Points ─── -->
+      <div class="adm-section">
+        <div class="adm-section-title">👥 ניהול נקודות משתמשים</div>
+        <div class="adm-hint">שנה נקודות בונוס לכל משתמש (מצטרפות לחישוב האוטומטי)</div>
+        <div id="adm-users-list">
+          ${(users || []).map(u => {
+            const totalRow = App.leaderboardCache.find(e => e.name === u.name);
+            return `
+            <div class="adm-user-row">
+              <div class="adm-user-ava">${(u.name || '?').charAt(0).toUpperCase()}</div>
+              <div class="adm-user-info">
+                <div class="adm-user-name">${esc(u.name)}</div>
+                <div class="adm-user-total">סה"כ: ${totalRow ? totalRow.points : (u.bonus_points || 0)} נק'</div>
+              </div>
+              <div class="adm-bonus-ctrl">
+                <label style="font-size:10px;color:var(--w30);display:block;margin-bottom:2px">בונוס</label>
+                <div style="display:flex;align-items:center;gap:6px">
+                  <button class="adm-step-btn" onclick="adminStepBonus('${esc(u.name)}',-1)">−</button>
+                  <input class="adm-bonus-input" id="bonus-${esc(u.name)}" type="number"
+                    value="${u.bonus_points || 0}" min="-50" max="200">
+                  <button class="adm-step-btn" onclick="adminStepBonus('${esc(u.name)}',1)">+</button>
+                </div>
+              </div>
+              <button class="adm-save-btn" onclick="adminSaveBonus('${esc(u.name)}')">✓</button>
+            </div>`;
+          }).join('')}
+        </div>
+      </div>
+
+      <!-- ─── SECTION: Match Results Override ─── -->
+      <div class="adm-section">
+        <div class="adm-section-title">⚽ הגדרת תוצאות ידניות</div>
+        <div class="adm-hint">קובע תוצאה שמחשבת ניקוד גם אם ה-API עדיין לא עדכן</div>
+        <div id="adm-matches-list">
+          ${knockoutMatches.length === 0 ? '<div style="color:var(--w30);font-size:13px;padding:12px 0">אין משחקי נוקאאוט</div>' :
+            knockoutMatches
+              .sort((a,b) => (a.dateInfo?.timestamp||0) - (b.dateInfo?.timestamp||0))
+              .map(m => {
+                const ov = overrides[String(m.id)];
+                const tagLabel = { r32:'שמינית', qf:'רבע', sf:'חצי', final:'גמר' }[m.type] || m.type;
+                const apiScore = m.finished ? `${m.home_score}:${m.away_score}` : '—';
+                return `
+                <div class="adm-match-row">
+                  <div class="adm-match-info">
+                    <span class="adm-match-tag">${tagLabel}</span>
+                    <span class="adm-match-teams">${m.home_flag||'🏳️'} ${esc(m.home_team_name||'?')} נ' ${esc(m.away_team_name||'?')} ${m.away_flag||'🏳️'}</span>
+                    <span class="adm-match-api">API: ${apiScore}${ov ? ` | עקיפה: ${ov.home}:${ov.away}` : ''}</span>
+                  </div>
+                  <div class="adm-score-ctrl">
+                    <input class="adm-score-input" id="ovh-${m.id}" type="number" placeholder="ב" min="0" max="20" value="${ov ? ov.home : ''}">
+                    <span style="color:var(--w30)">:</span>
+                    <input class="adm-score-input" id="ova-${m.id}" type="number" placeholder="א" min="0" max="20" value="${ov ? ov.away : ''}">
+                    <button class="adm-save-btn" onclick="adminSaveOverride('${m.id}')">✓</button>
+                    ${ov ? `<button class="adm-clear-btn" onclick="adminClearOverride('${m.id}')">✕</button>` : ''}
+                  </div>
+                </div>`;
+              }).join('')}
+        </div>
+      </div>
+
+      <button class="modal-cancel-btn" style="margin-top:12px" onclick="closeAdminPanel()">סגור</button>
+    `;
+  } catch (err) {
+    content.innerHTML = `<div style="color:var(--red);padding:20px">שגיאה: ${err.message}</div>
+      <button class="modal-cancel-btn" onclick="closeAdminPanel()">סגור</button>`;
+  }
+}
+
+function closeAdminPanel() {
+  document.getElementById('admin-modal').classList.add('hidden');
+}
+
+function adminStepBonus(userName, delta) {
+  const inp = document.getElementById(`bonus-${userName}`);
+  if (!inp) return;
+  inp.value = Math.max(-50, Math.min(200, (parseInt(inp.value) || 0) + delta));
+}
+
+async function adminSaveBonus(userName) {
+  const inp = document.getElementById(`bonus-${userName}`);
+  if (!inp) return;
+  const bonus = parseInt(inp.value) || 0;
+  try {
+    await DB.setUserBonusPoints(userName, bonus);
+    showToast(`✅ נקודות בונוס של ${userName} עודכנו ל-${bonus}`, 'success');
+    // Refresh leaderboard
+    App.leaderboardCache = await DB.computeLeaderboard(App.knockoutMatches);
+    if (App.currentSection === 'leaderboard') renderLeaderboard();
+    if (App.currentSection === 'home') renderHome();
+  } catch (e) {
+    showToast(`שגיאה: ${e.message}`, 'error');
+  }
+}
+
+async function adminSaveOverride(matchId) {
+  const h = parseInt(document.getElementById(`ovh-${matchId}`)?.value);
+  const a = parseInt(document.getElementById(`ova-${matchId}`)?.value);
+  if (isNaN(h) || isNaN(a)) { showToast('הזן תוצאה תקינה', 'error'); return; }
+  try {
+    await DB.setMatchOverride(matchId, h, a);
+    showToast(`✅ תוצאה נשמרה: ${h}:${a}`, 'success');
+    App.leaderboardCache = await DB.computeLeaderboard(App.knockoutMatches);
+    // Re-open panel to show updated state
+    openAdminPanel();
+  } catch (e) {
+    showToast(`שגיאה: ${e.message}`, 'error');
+  }
+}
+
+async function adminClearOverride(matchId) {
+  try {
+    // Delete the override row
+    await fetch(`${(window.BETOZ_CONFIG||{}).SUPABASE_URL}/rest/v1/match_overrides?match_id=eq.${matchId}`, {
+      method: 'DELETE',
+      headers: {
+        'apikey': (window.BETOZ_CONFIG||{}).SUPABASE_ANON_KEY,
+        'Authorization': `Bearer ${(window.BETOZ_CONFIG||{}).SUPABASE_ANON_KEY}`,
+      }
+    });
+    showToast('✅ עקיפה הוסרה', 'success');
+    App.leaderboardCache = await DB.computeLeaderboard(App.knockoutMatches);
+    openAdminPanel();
+  } catch (e) {
+    showToast(`שגיאה: ${e.message}`, 'error');
+  }
+}
+
+
+
+// ═══════════════════════════════════════════
 // APP LOAD
 // ═══════════════════════════════════════════
 async function loadAndShowApp() {
